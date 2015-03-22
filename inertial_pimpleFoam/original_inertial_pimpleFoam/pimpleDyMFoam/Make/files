@@ -1,0 +1,3 @@
+inertial_pimpleDyMFoam.C
+
+EXE = $(FOAM_APPBIN)/inertial_pimpleDyMFoam
