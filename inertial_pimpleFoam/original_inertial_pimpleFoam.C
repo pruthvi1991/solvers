@@ -43,13 +43,13 @@ Description
 #include "IOMRFZoneList.H"
 #include "fixedFluxPressureFvPatchScalarField.H"
 #define pi 3.141592653589793238
-#define freQ 0.012 
+#define freQ 1.15 
 #define amP 0.457
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 int main(int argc, char *argv[])
 {
-const dimensionedScalar gunits("gunits", dimensionSet(0,1,-2,0,0,0,0), 0.01574684362);
+const dimensionedScalar gunits("gunits", dimensionSet(0,1,-2,0,0,0,0), 0.1058);
 
     #include "setRootCase.H"
     #include "createTime.H"
@@ -73,7 +73,7 @@ const dimensionedScalar gunits("gunits", dimensionSet(0,1,-2,0,0,0,0), 0.0157468
 
         runTime++;
 	
-	g=gunits*Foam::sin(runTime.value()*2*pi*freQ)*vector(0,1,0);
+	g=gunits*Foam::cos(runTime.value()*freQ)*vector(0,1,0);
 
         Info<< "Time = " << runTime.timeName() << nl << endl;
 

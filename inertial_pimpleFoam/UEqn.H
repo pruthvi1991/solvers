@@ -17,7 +17,7 @@ volScalarField rAU(1.0/UEqn().A());
 
 if (pimple.momentumPredictor())
 {
-    solve(UEqn() == g -fvc::grad(p));
+    solve(UEqn() == -g -fvc::grad(p));
 
     fvOptions.correct(U);
 }

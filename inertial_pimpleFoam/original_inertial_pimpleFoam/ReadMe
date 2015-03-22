@@ -1,5 +1,0 @@
-This solver is in the heaving reference frame. This means there is an additional body force term in the incompressible navier stokes equation. The body force is a simple sinusoid. The solver is derived from the pimpleFoam solver. 
-
-F = F*sin(wt)
-
-Reference : http://www.cfd-online.com/Forums/openfoam/71740-variation-gravity-time.html

@@ -1,3 +1,0 @@
-original_inertial_pimpleFoam.C
-
-EXE = $(FOAM_USER_APPBIN)/original_inertial_pimpleFoam
