@@ -62,6 +62,8 @@ const dimensionedScalar gunits("gunits", dimensionSet(0,1,-2,0,0,0,0), 0.0157468
     #include "createPcorrTypes.H"
     #include "CourantNo.H"
     #include "setInitialDeltaT.H"
+    #include "readGravitationalAcceleration.H"
+
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
