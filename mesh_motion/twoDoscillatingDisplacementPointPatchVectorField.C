@@ -23,7 +23,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "twoDoscillatingDisplacementPointPatchVectorField.H"
+#include "twoDOscillatingDisplacementPointPatchVectorField.H"
 #include "pointPatchFields.H"
 #include "addToRunTimeSelectionTable.H"
 #include "Time.H"
@@ -36,23 +36,28 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-oscillatingDisplacementPointPatchVectorField::
-oscillatingDisplacementPointPatchVectorField
+twoDOscillatingDisplacementPointPatchVectorField::
+twoDOscillatingDisplacementPointPatchVectorField
 (
     const pointPatch& p,
     const DimensionedField<vector, pointMesh>& iF
 )
 :
     fixedValuePointPatchField<vector>(p, iF),
-    amplitude_(vector::zero),
+    axis_(vector::zero),
+    origin_(vector::zero),
+    angle0_(0.0),
+    amplitude_(0.0),
     omega_(0.0),
+    p0_(p.localPoints()),
+   //added for H
     amplitudeH_(vector::zero),
-    omegaH_(0.0) 
+    omegaH_(0.0)     
 {}
 
 
-oscillatingDisplacementPointPatchVectorField::
-oscillatingDisplacementPointPatchVectorField
+twoDOscillatingDisplacementPointPatchVectorField::
+twoDOscillatingDisplacementPointPatchVectorField
 (
     const pointPatch& p,
     const DimensionedField<vector, pointMesh>& iF,
@@ -60,8 +65,12 @@ oscillatingDisplacementPointPatchVectorField
 )
 :
     fixedValuePointPatchField<vector>(p, iF, dict),
-    amplitude_(dict.lookup("amplitude")),
+    axis_(dict.lookup("axis")),
+    origin_(dict.lookup("origin")),
+    angle0_(readScalar(dict.lookup("angle0"))),
+    amplitude_(readScalar(dict.lookup("amplitude"))),
     omega_(readScalar(dict.lookup("omega"))),
+//added for H
     amplitudeH_(dict.lookup("amplitudeH")),
     omegaH_(readScalar(dict.lookup("omegaH")))
 {
@@ -69,44 +78,91 @@ oscillatingDisplacementPointPatchVectorField
     {
         updateCoeffs();
     }
+
+    if (dict.found("p0"))
+    {
+        p0_ = vectorField("p0", dict , p.size());
+    }
+    else
+    {
+        p0_ = p.localPoints();
+    }
 }
 
 
-oscillatingDisplacementPointPatchVectorField::
-oscillatingDisplacementPointPatchVectorField
+twoDOscillatingDisplacementPointPatchVectorField::
+twoDOscillatingDisplacementPointPatchVectorField
 (
-    const oscillatingDisplacementPointPatchVectorField& ptf,
+    const twoDOscillatingDisplacementPointPatchVectorField& ptf,
     const pointPatch& p,
     const DimensionedField<vector, pointMesh>& iF,
     const pointPatchFieldMapper& mapper
 )
 :
     fixedValuePointPatchField<vector>(ptf, p, iF, mapper),
+    axis_(ptf.axis_),
+    origin_(ptf.origin_),
+    angle0_(ptf.angle0_),
     amplitude_(ptf.amplitude_),
     omega_(ptf.omega_),
+    p0_(ptf.p0_, mapper),
+    //added for H
     amplitudeH_(ptf.amplitudeH_),
     omegaH_(ptf.omegaH_)
+
 {}
 
 
-oscillatingDisplacementPointPatchVectorField::
-oscillatingDisplacementPointPatchVectorField
+twoDOscillatingDisplacementPointPatchVectorField::
+twoDOscillatingDisplacementPointPatchVectorField
 (
-    const oscillatingDisplacementPointPatchVectorField& ptf,
+    const twoDOscillatingDisplacementPointPatchVectorField& ptf,
     const DimensionedField<vector, pointMesh>& iF
 )
 :
     fixedValuePointPatchField<vector>(ptf, iF),
+    axis_(ptf.axis_),
+    origin_(ptf.origin_),
+    angle0_(ptf.angle0_),
     amplitude_(ptf.amplitude_),
     omega_(ptf.omega_),
+    p0_(ptf.p0_),
+//added for H
     amplitudeH_(ptf.amplitudeH_),
     omegaH_(ptf.omegaH_)
+
 {}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void oscillatingDisplacementPointPatchVectorField::updateCoeffs()
+void twoDOscillatingDisplacementPointPatchVectorField::autoMap
+(
+    const pointPatchFieldMapper& m
+)
+{
+    fixedValuePointPatchField<vector>::autoMap(m);
+
+    p0_.autoMap(m);
+}
+
+
+void twoDOscillatingDisplacementPointPatchVectorField::rmap
+(
+    const pointPatchField<vector>& ptf,
+    const labelList& addr
+)
+{
+    const twoDOscillatingDisplacementPointPatchVectorField& aODptf =
+        refCast<const twoDOscillatingDisplacementPointPatchVectorField>(ptf);
+
+    fixedValuePointPatchField<vector>::rmap(aODptf, addr);
+
+    p0_.rmap(aODptf.p0_, addr);
+}
+
+
+void twoDOscillatingDisplacementPointPatchVectorField::updateCoeffs()
 {
     if (this->updated())
     {
@@ -116,15 +172,36 @@ void oscillatingDisplacementPointPatchVectorField::updateCoeffs()
     const polyMesh& mesh = this->dimensionedInternalField().mesh()();
     const Time& t = mesh.time();
 
-    Field<vector>::operator=(amplitude_*sin(omega_*t.value())) + (amplitudeH_*sin(omegaH_*t.value()));
+    scalar angle = angle0_ + amplitude_*sin(omega_*t.value());
+    vector axisHat = axis_/mag(axis_);
+    vectorField p0Rel(p0_ - origin_);
+
+
+
+    vectorField::operator=
+    (
+        p0Rel*(cos(angle) - 1)
+      + (axisHat ^ p0Rel*sin(angle))
+      - (amplitudeH_*cos(omegaH_*t.value())) + (amplitudeH_)
+      + (axisHat & p0Rel)*(1 - cos(angle))*axisHat
+    );
 
     fixedValuePointPatchField<vector>::updateCoeffs();
 }
 
 
-void oscillatingDisplacementPointPatchVectorField::write(Ostream& os) const
+void twoDOscillatingDisplacementPointPatchVectorField::write
+(
+    Ostream& os
+) const
 {
     pointPatchField<vector>::write(os);
+    os.writeKeyword("axis")
+        << axis_ << token::END_STATEMENT << nl;
+    os.writeKeyword("origin")
+        << origin_ << token::END_STATEMENT << nl;
+    os.writeKeyword("angle0")
+        << angle0_ << token::END_STATEMENT << nl;
     os.writeKeyword("amplitude")
         << amplitude_ << token::END_STATEMENT << nl;
     os.writeKeyword("omega")
@@ -133,6 +210,7 @@ void oscillatingDisplacementPointPatchVectorField::write(Ostream& os) const
         << amplitudeH_ << token::END_STATEMENT << nl;
     os.writeKeyword("omegaH")
         << omegaH_ << token::END_STATEMENT << nl;
+    p0_.writeEntry("p0", os);
     writeEntry("value", os);
 }
 
@@ -142,7 +220,7 @@ void oscillatingDisplacementPointPatchVectorField::write(Ostream& os) const
 makePointPatchTypeField
 (
     pointPatchVectorField,
-    oscillatingDisplacementPointPatchVectorField
+    twoDOscillatingDisplacementPointPatchVectorField
 );
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

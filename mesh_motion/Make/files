@@ -1,2 +1,2 @@
-twoDOscillatingDisplacementPointPatchVectorField.C
+twoDoscillatingDisplacementPointPatchVectorField.C
 LIB = $(FOAM_LIBBIN)/libmy2DOF
